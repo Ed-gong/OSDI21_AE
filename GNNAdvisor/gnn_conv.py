@@ -46,8 +46,8 @@ class GNNAFunction(torch.autograd.Function):
                                 inputInfo.partSize, inputInfo.dimWorker, inputInfo.warpPerBlock)[0]
         
 
-        # print(X.size())
-        # print(weight.size())
+        #print(X.size())
+        #print(weight.size())
         # X_prime = torch.mm(X, weight)
         # X_prime = GNNA.SAG(X_prime, inputInfo.row_pointers, inputInfo.column_index, 
         #                     inputInfo.degrees, inputInfo.partPtr, inputInfo.part2Node, \

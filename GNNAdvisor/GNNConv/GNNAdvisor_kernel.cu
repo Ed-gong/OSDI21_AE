@@ -277,7 +277,8 @@ std::vector<torch::Tensor> spmm_forward_cuda(
     int warpPerBlock
 ) 
 {
-    auto tmp = torch::mm(input, weight);
+    //auto tmp = torch::mm(input, weight);
+    auto tmp = input;
     // auto output = torch::zeros_like(tmp);
     auto output = torch::zeros({input.size(0), weight.size(1)}, torch::kCUDA);
     const int dim = output.size(1);
@@ -352,7 +353,10 @@ __global__ void spmm_forward_cuda_kernel(
         int srcId = part2Node[warpId];              // aggregated source node
         int partBeg = part_pointers[warpId];        // partitioning pointer start
         int partEnd = part_pointers[warpId + 1];    // part pointer end
-        float src_norm = degrees[srcId];            // norm of the source node
+        //if (warpId == num_parts - 1){
+            //printf("the num of edge is %d \n", partEnd);
+        //}
+        //float src_norm = degrees[srcId];            // norm of the source node
 
         // Cache the part neighbors by all threads from a warp.
         const int pindex_base = block_warpId * partSize;
@@ -386,7 +390,7 @@ __global__ void spmm_forward_cuda_kernel(
             // int nid = partial_ids[nIdx];
             // if (laneid == 0)
             //     printf("verify nid - 222222: %d\n", nid);
-            float degree_norm_inv = __fmaf_rn(src_norm, degrees[nid], 0);
+            //float degree_norm_inv = __fmaf_rn(src_norm, degrees[nid], 0);
 
             // Initialize shared memory for partial results
             if (nIdx == 0)
@@ -400,8 +404,8 @@ __global__ void spmm_forward_cuda_kernel(
             #pragma unroll
             for (int d = laneid; d < dim; d += dimWorker){
                 // if(nid >= num_nodes || nid < 0) printf("aggregation: %d\n", nid);
-                partial_results[presult_base + d] += __fmaf_rn(degree_norm_inv, input[nid][d], 0);
-                // partial_results[presult_base + d] += input[nid][d];
+                //partial_results[presult_base + d] += __fmaf_rn(degree_norm_inv, input[nid][d], 0);
+                partial_results[presult_base + d] += input[nid][d];
             }
         }
 

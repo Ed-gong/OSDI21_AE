@@ -17,9 +17,9 @@ import datetime
 parser = argparse.ArgumentParser()
 # Dataset related parameters.
 parser.add_argument("--dataDir", type=str, default="../osdi-ae-graphs", help="the path to graphs")
-parser.add_argument("--dataset", type=str, default='amazon0601', help="dataset")
-parser.add_argument("--dim", type=int, default=96, help="input embedding dimension size")
-parser.add_argument("--hidden", type=int, default=16, help="hidden dimension size")
+parser.add_argument("--dataset", type=str, default='reddit', help="dataset")
+parser.add_argument("--dim", type=int, default=32, help="input embedding dimension size")
+parser.add_argument("--hidden", type=int, default=16, help="hidden dimension size")# this number will not affacted the result
 parser.add_argument("--classes", type=int, default=22, help="output classes size")
 
 # Model training related parameters.
@@ -36,7 +36,7 @@ parser.add_argument("--sharedMem", type=int, default=100, help="shared memory si
 parser.add_argument('--manual_mode', type=str, choices=['True', 'False'], default='True', help="True: use manual config, False: auto config, default: True")
 parser.add_argument('--verbose_mode', type=str, choices=['True', 'False'], default='False', help="True: verbose mode, False: simple mode, default: False")
 parser.add_argument('--enable_rabbit', type=str, choices=['True', 'False'], default='False', help="True: enable rabbit reordering, False, disable rabbit reordering, default: False (disable for both manual and auto mode).")
-parser.add_argument('--loadFromTxt', type=str, choices=['True', 'False'], default='False', help="True: load the graph TXT edge list, False: load from .npy, default: False (load from npz fast)")
+parser.add_argument('--loadFromTxt', type=str, choices=['True', 'False'], default='True', help="True: load the graph TXT edge list, False: load from .npy, default: False (load from npz fast)")
 parser.add_argument('--single_spmm', type=str, choices=['True', 'False'], default='False', help="True: profile the single SpMM (neighbor aggregation) kernel for number epoches times")
 parser.add_argument('--verify_spmm', type=str, choices=['True', 'False'], default='False', help="True: verify the output correctness of a single SpMM (neighbor aggregation) kernel against the CPU reference implementation.")
 
@@ -50,7 +50,8 @@ enable_rabbit = args.enable_rabbit == 'True'
 loadFromTxt = args.loadFromTxt == 'True'
 single_spmm = args.single_spmm == 'True'
 verify_spmm = args.verify_spmm == 'True'
-
+num_test_feature = int(args.dim)
+print("88888888 num_of _test_feat:", num_test_feature)
 # requires GPU for evaluation.
 assert torch.cuda.is_available()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -68,6 +69,7 @@ if loadFromTxt:
     #classes = 41
     #path = "/home/ygong07/data/test2/citeseer/graph_structure/citeseer_graph_undirect.txt"
     #path = "/home/ygong07/data/test2/citeseer/graph_structure"
+    """
     if args.dataset == 'citeseer':
         path = "/home/ygong07/data/test2/citeseer/graph_structure/citeseer_graph_undirect.txt"
         dim = 3703
@@ -104,7 +106,8 @@ if loadFromTxt:
         train_y_label =  pubmed_util.read_label_info("/home/ygong07/data/test2/pubmed/label/y_label.txt")
 
     elif args.dataset == 'ogb-arx':
-        path = "/home/ygong07/data/test2/ogb-arx/graph_structure/graph_undirect.txt"
+        #path = "/home/ygong07/data/test2/ogb-arx/graph_structure/graph_undirect.txt"
+        path = "/home/ygong07/data/test2/ogb-arx/graph_structure_double/ogb_arx_double.txt"
         dim = 128
         classes = 40
         dataset = custom_dataset(path, dim, classes, load_from_txt=True, verbose=verbose_mode)
@@ -116,18 +119,22 @@ if loadFromTxt:
         train_y_label =  pubmed_util.read_label_info("/home/ygong07/data/test2/ogb-arx/label/train_y_label.txt")
 
     elif args.dataset == 'reddit':
-        path = "/mnt/huge_26TB/data/test2/reddit/graph_structure/reddit_graph_undirect.txt"
+        #path = "/mnt/huge_26TB/data/test2/reddit/graph_structure/reddit_graph_undirect.txt"
+        path = "/mnt/huge_26TB/data/test2/reddit/graph_structure_double/reddit_double.txt"
         dim = 602
         classes = 40
         dataset = custom_dataset(path, dim, classes, load_from_txt=True, verbose=verbose_mode)
-        feat = pubmed_util.read_feature_info("/mnt/huge_26TB/data/test2/reddit/feature/reddit_feature.txt")
-        feat = torch.tensor(feat)
+        #feat = pubmed_util.read_feature_info("/mnt/huge_26TB/data/test2/reddit/feature/reddit_feature.txt")
+        num_vcount = 232965
+        feat = torch.ones(num_vcount, num_test_feature)
+        #feat = torch.tensor(feat)
         feat = feat.to(device)
         #print("feat from loadtxt", feat)
         train_id = pubmed_util.read_index_info("/mnt/huge_26TB/data/test2/reddit/index/reddit_train_index.txt")
         train_y_label =  pubmed_util.read_label_info("/mnt/huge_26TB/data/test2/reddit/label/reddit_y_label.txt")
     elif args.dataset == 'ogb-product':
-        path = "/home/ygong07/data/test2/ogb-product/graph_structure/graph_undirect.txt"
+        path = "/home/ygong07/data/test2/ogb-product/graph_structure_double/ogb_product_double.txt"
+        #path = "/home/ygong07/data/test2/ogb-product/graph_structure/graph_undirect.txt"
         dim = 100
         classes = 47
         dataset = custom_dataset(path, dim, classes, load_from_txt=True, verbose=verbose_mode)
@@ -137,25 +144,34 @@ if loadFromTxt:
         #print("feat from loadtxt", feat)
         train_id = pubmed_util.read_index_info("/home/ygong07/data/test2/ogb-product/index/train_index.txt")
         train_y_label =  pubmed_util.read_label_info("/home/ygong07/data/test2/ogb-product/label/train_y_label.txt")
+"""
 
 
 
+    #train_id = torch.tensor(train_id)
+    #train_y_label = torch.tensor(train_y_label)
+    #train_id=train_id.to(device)
+    #train_y_label=train_y_label.to(device)
 
-    train_id = torch.tensor(train_id)
-    train_y_label = torch.tensor(train_y_label)
-    train_id=train_id.to(device)
-    train_y_label=train_y_label.to(device)
-
-
+"""
 else:
     path = osp.join(args.dataDir, args.dataset+".npz")
     dataset = custom_dataset(path, args.dim, args.classes, load_from_txt=False, verbose=verbose_mode)
     feat = pubmed_util.read_feature_info("/home/ygong07/data/test2/citeseer/feature/citeseer_feature.txt")
     feat = torch.tensor(feat)
     feat = feat.to(device)
+"""   
+
+#path = "/home/ygong07/data/test2/ogb-product/graph_structure/graph_undirect.txt"
+dataset = custom_dataset(args.dataset, args.dim, args.classes, load_from_txt=True, verbose=verbose_mode)
+feat = torch.ones(dataset.num_nodes, args.dim)
+feat = feat.to(device)
+#print("feat from loadtxt", feat)
+
 
 num_nodes = dataset.num_nodes
 num_edges = dataset.num_edges
+print("graph node and edge", num_nodes, num_edges)
 column_index = dataset.column_index
 row_pointers = dataset.row_pointers
 degrees = dataset.degrees
@@ -200,97 +216,32 @@ inputInfo.column_index  = inputInfo.column_index.to(device)
 inputInfo.partPtr = partPtr.int().to(device)
 inputInfo.part2Node  = part2Node.int().to(device)
 
-####################################
-# Verifing a single SpMM kernel
-# against the CPU reference.
-####################################
-if verify_spmm:
-    from unitest import *
-    valid = Verification(args.hidden, \
-                        inputInfo.row_pointers, inputInfo.column_index, degrees, \
-                        inputInfo.partPtr, inputInfo.part2Node, \
-                        partSize, dimWorker, warpPerBlock)
-    valid.compute()
-    valid.reference(dataset.edge_index, dataset.val, dataset.num_nodes)
-    valid.compare()
-    sys.exit(0)
 
-####################################
-# Profiling a single SpMM kernel
-####################################
-if single_spmm:
-    from unitest import *
-    valid = Verification(args.hidden, \
-                        inputInfo.row_pointers, inputInfo.column_index, degrees, \
-                        inputInfo.partPtr, inputInfo.part2Node, \
-                        partSize, dimWorker, warpPerBlock)
-    valid.profile_spmm(round=args.num_epoches)
-    sys.exit(0)
 
-####################################
-# Building GNN model
-####################################
-if args.model == 'gcn':
-    class Net(torch.nn.Module):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.conv1 = GCNConv(dataset.num_features, args.hidden)
-            #print("conv1 layer num_feas, num_hidden", dataset.num_features, args.hidden)
-            self.conv2 = GCNConv(args.hidden, dataset.num_classes)
-            #print("conv2 layer num_feas, num_hidden", args.hidden, dataset.num_classes)
+################# test spmm for reddit################
+######################################################
+def test_spmm(X, inputInfo):
+    weights = torch.nn.Parameter(torch.randn(200, 16)).to(device) # this weight will not be used in following computation
+    #ctx.inputInfo = inputInfo
+    #ctx.partSize, ctx.dimWorker, ctx.warpPerBlock = \
+                    #inputInfo.partSize, inputInfo.dimWorker, inputInfo.warpPerBlock
 
-        def forward(self):
-            #x = dataset.x
-            x = feat
-            #print("x from forward", x.size())
-            x = F.relu(self.conv1(x, inputInfo.set_input()))
-            x = self.conv2(x, inputInfo.set_hidden())
-            return F.log_softmax(x, dim=1)
-else:
-    class Net(torch.nn.Module):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.conv1 = GINConv(dataset.num_features, args.hidden)
-            self.conv2 = GINConv(args.hidden, args.hidden)
-            self.conv3 = GINConv(args.hidden, args.hidden)
-            self.conv4 = GINConv(args.hidden, args.hidden)
-            self.conv5 = GINConv(args.hidden, dataset.num_classes)
+    start_train = time.perf_counter()
+    X_prime = GNNA.forward(X, weights, inputInfo.row_pointers, inputInfo.column_index, 
+                                  inputInfo.degrees, inputInfo.partPtr, inputInfo.part2Node, \
+                                                                  inputInfo.partSize, inputInfo.dimWorker, inputInfo.warpPerBlock)[0]
+    torch.cuda.synchronize()
+    train_time = time.perf_counter() - start_train
+    print("feat dim", num_test_feature)
+    print('Time (second for spmm): {:.6f}'.format(train_time))
+    print("\n")
+    print("\n")
 
-        def forward(self):
-            #x = dataset.x
-            x = feat
-            x = F.relu(self.conv1(x, inputInfo.set_input()))
-            x = F.relu(self.conv2(x, inputInfo.set_hidden()))
-            x = F.relu(self.conv3(x, inputInfo.set_hidden()))
-            x = F.relu(self.conv4(x, inputInfo.set_hidden()))
-            x = self.conv5(x, inputInfo.set_hidden())
-            return F.log_softmax(x, dim=1)
 
-model, dataset = Net().to(device), dataset.to(device)
-if verbose_mode:
-    print(model)
 
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+dataset  = dataset.to(device)
 
-####################################
-# Define training function.
-####################################
 
-def train():
-    model.train()
-    optimizer.zero_grad()
-    loss = F.nll_loss(model()[:200], dataset.y[:200])
-    print("loss", loss)
-    loss.backward()
-    optimizer.step()
-def train_txt():
-    model.train()
-    optimizer.zero_grad()
-    loss = F.nll_loss(model()[train_id], train_y_label)
-    #print("loss", loss)
-    #loss = F.nll_loss(model()[:], dataset.y[:])
-    loss.backward()
-    optimizer.step()
 
 if __name__ == '__main__':
     # dry run
@@ -299,52 +250,9 @@ if __name__ == '__main__':
     # exit(0)
 
     torch.cuda.synchronize()
-    start_train = time.perf_counter()
-    for _ in tqdm(range(1, args.num_epoches + 1)):
-        if loadFromTxt:
-            start = datetime.datetime.now()
-            train_txt()
-            end = datetime.datetime.now()
-            difference = end - start
-            print("the time of advisor is:", difference)
-        else:
-            train()
-
-    torch.cuda.synchronize()
-    train_time = time.perf_counter() - start_train
-    #check the accuracy
-    if args.dataset == 'citeseer':
-        test_id = pubmed_util.read_index_info("/home/ygong07/data/test2/citeseer/index/citeseer_test_index.txt")
-        test_y_label =  pubmed_util.read_label_info("/home/ygong07/data/test2/citeseer/label/citeseer_test_y_label.txt")
-    elif args.dataset == 'cora':
-        test_id = pubmed_util.read_index_info("/home/ygong07/data/test2/cora/index/cora_test_index.txt")
-        test_y_label =  pubmed_util.read_label_info("/home/ygong07/data/test2/cora/label/cora_test_y_label.txt")
-    elif args.dataset == 'pubmed':
-        test_id = pubmed_util.read_index_info("/home/ygong07/data/test2/pubmed/index/test_index.txt")
-        test_y_label =  pubmed_util.read_label_info("/home/ygong07/data/test2/pubmed/label/test_y_label.txt")
-    elif args.dataset == 'ogb-arx':
-        test_id = pubmed_util.read_index_info("/home/ygong07/data/test2/ogb-arx/index/test_index.txt")
-        test_y_label =  pubmed_util.read_label_info("/home/ygong07/data/test2/ogb-arx/label/test_y_label.txt")
-    elif args.dataset == 'reddit':
-        test_id = pubmed_util.read_index_info("/mnt/huge_26TB/data/test2/reddit/index/reddit_test_index.txt")
-        test_y_label =  pubmed_util.read_label_info("/mnt/huge_26TB/data/test2/reddit/label/reddit_test_y_label.txt")
-    elif args.dataset == 'ogb-product':
-        test_id = pubmed_util.read_index_info("/home/ygong07/data/test2/ogb-product/index/test_index.txt")
-        test_y_label =  pubmed_util.read_label_info("/home/ygong07/data/test2/ogb-product/label/test_y_label.txt")
+    test_spmm(feat, inputInfo.set_input())
 
 
 
-    print("data", args.dataset)
-    test_id = torch.tensor(test_id)
-    test_y_label = torch.tensor(test_y_label)
-    test_id = test_id.to(device)
-    test_y_label = test_y_label.to(device)
-    print("prediction size", model()[test_id].size())
-    print("label size", test_y_label.size())
-    acc_val = pubmed_util.accuracy(model()[test_id], test_y_label)
-    #acc_val = pubmed_util.accuracy(model()[300:400], dataset.y[300:400])
 
-    print('Epoch %d | Test_accuracy: %.4f' % (args.num_epoches + 1, acc_val))
 
-    print('Time (second for all epoches): {:.3f}'.format(train_time))
-    print('num_epochs', args.num_epoches, args.model)
